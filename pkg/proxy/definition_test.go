@@ -3,46 +3,12 @@ package proxy
 import (
 	"testing"
 
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewDefinitions(t *testing.T) {
-	definition := NewDefinition()
-	assert.NotNil(t, definition)
-}
-
-func TestSuccessfulValidation(t *testing.T) {
-	definition := Definition{
-		ListenPath:  "/*",
-		UpstreamURL: "http://test.com",
-	}
-	isValid, err := definition.Validate()
-
-	assert.NoError(t, err)
-	assert.True(t, isValid)
-}
-
-func TestEmptyListenPathValidation(t *testing.T) {
-	definition := Definition{}
-	isValid, err := definition.Validate()
-
-	assert.Error(t, err)
-	assert.False(t, isValid)
-}
-
-func TestInvalidTargetURLValidation(t *testing.T) {
-	definition := Definition{
-		ListenPath:  " ",
-		UpstreamURL: "wrong",
-	}
-	isValid, err := definition.Validate()
-
-	assert.Error(t, err)
-	assert.False(t, isValid)
-}
-
 func TestRouteToJSON(t *testing.T) {
-	definition := NewDefinition()
+	definition := types.NewProxy()
 	route := NewRoute(definition)
 	json, err := route.JSONMarshal()
 	assert.NoError(t, err)

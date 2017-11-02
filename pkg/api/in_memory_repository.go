@@ -3,26 +3,27 @@ package api
 import (
 	"sync"
 
+	"github.com/hellofresh/janus/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
 // InMemoryRepository represents a in memory repository
 type InMemoryRepository struct {
 	sync.RWMutex
-	definitions map[string]*Definition
+	definitions map[string]*types.Backend
 }
 
 // NewInMemoryRepository creates a in memory repository
 func NewInMemoryRepository() *InMemoryRepository {
-	return &InMemoryRepository{definitions: make(map[string]*Definition)}
+	return &InMemoryRepository{definitions: make(map[string]*types.Backend)}
 }
 
 // FindAll fetches all the api definitions available
-func (r *InMemoryRepository) FindAll() ([]*Definition, error) {
+func (r *InMemoryRepository) FindAll() ([]*types.Backend, error) {
 	r.RLock()
 	defer r.RUnlock()
 
-	var definitions []*Definition
+	var definitions []*types.Backend
 	for _, definition := range r.definitions {
 		definitions = append(definitions, definition)
 	}
@@ -31,11 +32,11 @@ func (r *InMemoryRepository) FindAll() ([]*Definition, error) {
 }
 
 // FindValidAPIHealthChecks retrieves all apis that has health check configured
-func (r *InMemoryRepository) FindValidAPIHealthChecks() ([]*Definition, error) {
+func (r *InMemoryRepository) FindValidAPIHealthChecks() ([]*types.Backend, error) {
 	r.RLock()
 	defer r.RUnlock()
 
-	var definitions []*Definition
+	var definitions []*types.Backend
 	for _, definition := range r.definitions {
 		if definition.HealthCheck.URL != "" {
 			definitions = append(definitions, definition)
@@ -46,14 +47,14 @@ func (r *InMemoryRepository) FindValidAPIHealthChecks() ([]*Definition, error) {
 }
 
 // FindByName find an api definition by name
-func (r *InMemoryRepository) FindByName(name string) (*Definition, error) {
+func (r *InMemoryRepository) FindByName(name string) (*types.Backend, error) {
 	r.RLock()
 	defer r.RUnlock()
 
 	return r.findByName(name)
 }
 
-func (r *InMemoryRepository) findByName(name string) (*Definition, error) {
+func (r *InMemoryRepository) findByName(name string) (*types.Backend, error) {
 	definition, ok := r.definitions[name]
 	if false == ok {
 		return nil, ErrAPIDefinitionNotFound
@@ -63,7 +64,7 @@ func (r *InMemoryRepository) findByName(name string) (*Definition, error) {
 }
 
 // FindByListenPath find an API definition by proxy listen path
-func (r *InMemoryRepository) FindByListenPath(path string) (*Definition, error) {
+func (r *InMemoryRepository) FindByListenPath(path string) (*types.Backend, error) {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -77,12 +78,12 @@ func (r *InMemoryRepository) FindByListenPath(path string) (*Definition, error) 
 }
 
 // Exists searches an existing Proxy definition by its listen_path
-func (r *InMemoryRepository) Exists(def *Definition) (bool, error) {
+func (r *InMemoryRepository) Exists(def *types.Backend) (bool, error) {
 	return exists(r, def)
 }
 
 // Add adds an api definition to the repository
-func (r *InMemoryRepository) Add(definition *Definition) error {
+func (r *InMemoryRepository) Add(definition *types.Backend) error {
 	r.Lock()
 	defer r.Unlock()
 

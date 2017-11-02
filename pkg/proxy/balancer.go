@@ -4,6 +4,8 @@ import (
 	"errors"
 	"math/rand"
 	"sync"
+
+	"github.com/hellofresh/janus/pkg/types"
 )
 
 var (
@@ -18,7 +20,7 @@ var (
 type (
 	// Balancer holds the load balancer methods for many different algorithms
 	Balancer interface {
-		Elect(hosts []*Target) (*Target, error)
+		Elect(hosts []*types.Target) (*types.Target, error)
 	}
 
 	// RoundrobinBalancer balancer
@@ -37,7 +39,7 @@ func NewRoundrobinBalancer() *RoundrobinBalancer {
 }
 
 // Elect backend using roundrobin strategy
-func (b *RoundrobinBalancer) Elect(hosts []*Target) (*Target, error) {
+func (b *RoundrobinBalancer) Elect(hosts []*types.Target) (*types.Target, error) {
 	if len(hosts) == 0 {
 		return nil, ErrEmptyBackendList
 	}
@@ -61,7 +63,7 @@ func NewWeightBalancer() *WeightBalancer {
 }
 
 // Elect backend using roundrobin strategy
-func (b *WeightBalancer) Elect(hosts []*Target) (*Target, error) {
+func (b *WeightBalancer) Elect(hosts []*types.Target) (*types.Target, error) {
 	if len(hosts) == 0 {
 		return nil, ErrEmptyBackendList
 	}

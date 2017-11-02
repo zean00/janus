@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"github.com/ulule/limiter"
@@ -55,7 +56,7 @@ func (m *OAuthLoader) RegisterOAuthServers(oauthServers []*Spec, repo Repository
 		limiterInstance := limiter.New(limiterStore, rate)
 		rateLimitHandler = stdlib.NewMiddleware(limiterInstance).Handler
 
-		endpoints := map[*proxy.Definition]proxy.InChain{
+		endpoints := map[*types.Proxy]proxy.InChain{
 			oauthServer.Endpoints.Authorize:    proxy.NewInChain(corsHandler, rateLimitHandler),
 			oauthServer.Endpoints.Token:        proxy.NewInChain(NewSecretMiddleware(oauthServer).Handler, corsHandler, rateLimitHandler),
 			oauthServer.Endpoints.Introspect:   proxy.NewInChain(corsHandler, rateLimitHandler),
@@ -102,7 +103,7 @@ func (m *OAuthLoader) getManager(oauthServer *OAuth) (Manager, error) {
 	return NewManagerFactory(oauthServer).Build(managerType)
 }
 
-func (m *OAuthLoader) registerRoutes(endpoints map[*proxy.Definition]proxy.InChain) {
+func (m *OAuthLoader) registerRoutes(endpoints map[*types.Proxy]proxy.InChain) {
 	for endpoint, middleware := range endpoints {
 		if endpoint == nil {
 			log.Debug("Endpoint not registered")

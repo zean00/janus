@@ -3,19 +3,20 @@ package proxy
 import (
 	"testing"
 
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/suite"
 )
 
 type BalancerTestSuite struct {
 	suite.Suite
-	hosts []*Target
+	hosts []*types.Target
 }
 
 func (suite *BalancerTestSuite) SetupTest() {
-	suite.hosts = []*Target{
-		&Target{Target: "127.0.0.1", Weight: 5},
-		&Target{Target: "http://test.com", Weight: 10},
-		&Target{Target: "http://example.com", Weight: 8},
+	suite.hosts = []*types.Target{
+		&types.Target{Target: "127.0.0.1", Weight: 5},
+		&types.Target{Target: "http://test.com", Weight: 10},
+		&types.Target{Target: "http://example.com", Weight: 8},
 	}
 }
 
@@ -42,7 +43,7 @@ func (suite *BalancerTestSuite) TestRoundRobinBalancerSuccessfulBalance() {
 func (suite *BalancerTestSuite) TestRoundRobinBalancerEmptyList() {
 	balancer := NewRoundrobinBalancer()
 
-	_, err := balancer.Elect([]*Target{})
+	_, err := balancer.Elect([]*types.Target{})
 	suite.Error(err)
 }
 
@@ -57,14 +58,14 @@ func (suite *BalancerTestSuite) TestWeightBalancer() {
 func (suite *BalancerTestSuite) TestWeightBalancerEmptyList() {
 	balancer := NewWeightBalancer()
 
-	_, err := balancer.Elect([]*Target{})
+	_, err := balancer.Elect([]*types.Target{})
 	suite.Error(err)
 }
 
 func (suite *BalancerTestSuite) TestWeightBalancerZeroWeight() {
 	balancer := NewWeightBalancer()
 
-	_, err := balancer.Elect([]*Target{&Target{Target: "", Weight: 0}})
+	_, err := balancer.Elect([]*types.Target{&types.Target{Target: "", Weight: 0}})
 	suite.Error(err)
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/hellofresh/health-go"
 	"github.com/hellofresh/janus/pkg/api"
+	"github.com/hellofresh/janus/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -85,7 +86,7 @@ func NewStatusHandler(repo api.Repository) func(w http.ResponseWriter, r *http.R
 	}
 }
 
-func doStatusRequest(definition *api.Definition, closeBody bool) (*http.Response, error) {
+func doStatusRequest(definition *types.Backend, closeBody bool) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, definition.HealthCheck.URL, nil)
 	if err != nil {
 		log.WithError(err).Error("Creating the request for the health check failed")
@@ -108,7 +109,7 @@ func doStatusRequest(definition *api.Definition, closeBody bool) (*http.Response
 	return resp, err
 }
 
-func check(definition *api.Definition) func() error {
+func check(definition *types.Backend) func() error {
 	return func() error {
 		resp, err := doStatusRequest(definition, true)
 		if err != nil {

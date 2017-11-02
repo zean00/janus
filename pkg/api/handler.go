@@ -10,6 +10,7 @@ import (
 	"github.com/hellofresh/janus/pkg/opentracing"
 	"github.com/hellofresh/janus/pkg/render"
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/hellofresh/janus/pkg/types"
 )
 
 // Controller is the api rest controller
@@ -115,7 +116,7 @@ func (c *Controller) PutBy() http.HandlerFunc {
 // Post is the create handler
 func (c *Controller) Post() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		definition := NewDefinition()
+		definition := types.NewBackend()
 
 		err := json.NewDecoder(r.Body).Decode(definition)
 		if nil != err {

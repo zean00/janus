@@ -5,7 +5,7 @@ import (
 
 	"net/url"
 
-	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +15,7 @@ func newInMemoryRepo() *InMemoryRepository {
 	repo.Add(&OAuth{
 		Name: "test1",
 		Endpoints: Endpoints{
-			Token: &proxy.Definition{
+			Token: &types.Proxy{
 				ListenPath:  "/token",
 				UpstreamURL: "http://test.com/token",
 			},
@@ -25,7 +25,7 @@ func newInMemoryRepo() *InMemoryRepository {
 	repo.Add(&OAuth{
 		Name: "test2",
 		Endpoints: Endpoints{
-			Token: &proxy.Definition{
+			Token: &types.Proxy{
 				ListenPath:  "/token",
 				UpstreamURL: "http://test2.com/token",
 			},

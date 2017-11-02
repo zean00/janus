@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +13,7 @@ func newInMemoryRepo() *InMemoryRepository {
 
 	repo.Add(&Definition{
 		Name: "test1",
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test1",
 			UpstreamURL: "http://test1",
 		},
@@ -24,7 +25,7 @@ func newInMemoryRepo() *InMemoryRepository {
 
 	repo.Add(&Definition{
 		Name: "test2",
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test2",
 			UpstreamURL: "http://test2",
 		},
@@ -36,7 +37,7 @@ func newInMemoryRepo() *InMemoryRepository {
 func TestExists(t *testing.T) {
 	definition := &Definition{
 		Name: "test3",
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test3",
 			UpstreamURL: "http://test3",
 		},

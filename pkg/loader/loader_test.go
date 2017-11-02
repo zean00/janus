@@ -8,6 +8,7 @@ import (
 	"github.com/hellofresh/janus/pkg/api"
 	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,10 +23,10 @@ func TestLoadValidAPIDefinitions(t *testing.T) {
 	r := router.NewChiRouter()
 
 	apiRepo := api.NewInMemoryRepository()
-	apiRepo.Add(&api.Definition{
+	apiRepo.Add(&types.Backend{
 		Name:   "test1",
 		Active: true,
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test1",
 			UpstreamURL: "http://test1",
 			Methods:     []string{http.MethodGet},
@@ -46,10 +47,10 @@ func TestLoadValidAPIDefinitions(t *testing.T) {
 			},
 		},
 	})
-	apiRepo.Add(&api.Definition{
+	apiRepo.Add(&types.Backend{
 		Name:   "test2",
 		Active: true,
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test2",
 			UpstreamURL: "http://test2",
 			Methods:     []string{http.MethodGet},
@@ -65,10 +66,10 @@ func TestLoadInvalidAPIDefinitions(t *testing.T) {
 	r := router.NewChiRouter()
 
 	apiRepo := api.NewInMemoryRepository()
-	definition := &api.Definition{
+	definition := &types.Backend{
 		Name:   "test2",
 		Active: true,
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test2",
 			UpstreamURL: "http://test2",
 			Methods:     []string{http.MethodGet},
@@ -87,10 +88,10 @@ func TestLoadAPIDefinitionsMissingHTTPMethods(t *testing.T) {
 	r := router.NewChiRouter()
 
 	apiRepo := api.NewInMemoryRepository()
-	apiRepo.Add(&api.Definition{
+	apiRepo.Add(&types.Backend{
 		Name:   "test1",
 		Active: true,
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test1",
 			UpstreamURL: "http://test1",
 		},
@@ -105,10 +106,10 @@ func TestLoadInactiveAPIDefinitions(t *testing.T) {
 	r := router.NewChiRouter()
 
 	apiRepo := api.NewInMemoryRepository()
-	apiRepo.Add(&api.Definition{
+	apiRepo.Add(&types.Backend{
 		Name:   "test1",
 		Active: false,
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/test1",
 			UpstreamURL: "http://test1",
 		},

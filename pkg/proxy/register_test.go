@@ -9,6 +9,7 @@ import (
 
 	"github.com/hellofresh/janus/pkg/router"
 	"github.com/hellofresh/janus/pkg/test"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/hellofresh/stats-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -68,8 +69,8 @@ func TestSuccessfulProxy(t *testing.T) {
 	}
 }
 
-func createProxyDefinitions() []*Definition {
-	return []*Definition{
+func createProxyDefinitions() []*types.Backend {
+	return []*types.Backend{
 		{
 			ListenPath: "/example/*",
 			Upstreams: &Upstreams{

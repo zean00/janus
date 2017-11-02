@@ -6,6 +6,7 @@ import (
 
 	mgo "gopkg.in/mgo.v2"
 
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,16 +18,16 @@ const (
 
 // Repository defines the behavior of a proxy specs repository
 type Repository interface {
-	FindAll() ([]*Definition, error)
-	FindByName(name string) (*Definition, error)
-	FindByListenPath(path string) (*Definition, error)
-	Exists(def *Definition) (bool, error)
-	Add(app *Definition) error
+	FindAll() ([]*types.Backend, error)
+	FindByName(name string) (*types.Backend, error)
+	FindByListenPath(path string) (*types.Backend, error)
+	Exists(def *types.Backend) (bool, error)
+	Add(app *types.Backend) error
 	Remove(name string) error
-	FindValidAPIHealthChecks() ([]*Definition, error)
+	FindValidAPIHealthChecks() ([]*types.Backend, error)
 }
 
-func exists(r Repository, def *Definition) (bool, error) {
+func exists(r Repository, def *types.Backend) (bool, error) {
 	_, err := r.FindByName(def.Name)
 	if nil != err && err != ErrAPIDefinitionNotFound {
 		return false, err

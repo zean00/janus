@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/hellofresh/janus/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -46,8 +47,8 @@ func NewFileSystemRepository(dir string) (*FileSystemRepository, error) {
 	return repo, nil
 }
 
-func (r *FileSystemRepository) parseDefinition(apiDef []byte) *Definition {
-	appConfig := NewDefinition()
+func (r *FileSystemRepository) parseDefinition(apiDef []byte) *types.Backend {
+	appConfig := types.NewBackend()
 	if err := json.Unmarshal(apiDef, appConfig); err != nil {
 		log.WithError(err).Error("[RPC] --> Couldn't unmarshal api configuration")
 	}

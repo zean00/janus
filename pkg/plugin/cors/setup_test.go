@@ -5,6 +5,7 @@ import (
 
 	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,7 +51,7 @@ func TestSetup(t *testing.T) {
 		"request_headers": []string{"Content-Type", "Authorization"},
 		"exposed_headers": []string{"Test"},
 	}
-	route := proxy.NewRoute(&proxy.Definition{})
+	route := proxy.NewRoute(&types.Proxy{})
 	err := setupCors(route, rawConfig)
 
 	assert.NoError(t, err)

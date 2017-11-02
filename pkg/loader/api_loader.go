@@ -5,6 +5,7 @@ import (
 	"github.com/hellofresh/janus/pkg/middleware"
 	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,14 +26,14 @@ func (m *APILoader) LoadDefinitions(repo api.Repository) {
 }
 
 // RegisterApis load application middleware
-func (m *APILoader) RegisterApis(apiSpecs []*api.Spec) {
+func (m *APILoader) RegisterApis(apiSpecs []*types.Spec) {
 	for _, referenceSpec := range apiSpecs {
 		m.RegisterAPI(referenceSpec)
 	}
 }
 
 // RegisterAPI register an API Spec in the register
-func (m *APILoader) RegisterAPI(referenceSpec *api.Spec) {
+func (m *APILoader) RegisterAPI(referenceSpec *types.Spec) {
 	logger := log.WithField("api_name", referenceSpec.Name)
 
 	active, err := referenceSpec.Validate()
@@ -68,8 +69,8 @@ func (m *APILoader) RegisterAPI(referenceSpec *api.Spec) {
 			}
 		}
 
-		if len(referenceSpec.Definition.Proxy.Hosts) > 0 {
-			route.AddInbound(middleware.NewHostMatcher(referenceSpec.Definition.Proxy.Hosts).Handler)
+		if len(referenceSpec.Proxy.Hosts) > 0 {
+			route.AddInbound(middleware.NewHostMatcher(referenceSpec.Proxy.Hosts).Handler)
 		}
 
 		m.register.Add(route)
@@ -80,15 +81,15 @@ func (m *APILoader) RegisterAPI(referenceSpec *api.Spec) {
 }
 
 // getAPISpecs Load application specs from data source
-func (m *APILoader) getAPISpecs(repo api.Repository) []*api.Spec {
+func (m *APILoader) getAPISpecs(repo api.Repository) []*types.Spec {
 	definitions, err := repo.FindAll()
 	if err != nil {
 		log.Panic(err)
 	}
 
-	var specs []*api.Spec
+	var specs []*types.Spec
 	for _, definition := range definitions {
-		specs = append(specs, &api.Spec{Definition: definition})
+		specs = append(specs, &types.Spec{Backend: definition})
 	}
 
 	return specs

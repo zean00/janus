@@ -5,7 +5,7 @@ import (
 
 	"github.com/Knetic/govaluate"
 	"github.com/hellofresh/janus/pkg/jwt"
-	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
@@ -39,16 +39,16 @@ type OAuth struct {
 
 // Endpoints defines the oauth endpoints that wil be proxied
 type Endpoints struct {
-	Authorize  *proxy.Definition `bson:"authorize" json:"authorize"`
-	Token      *proxy.Definition `bson:"token" json:"token"`
-	Introspect *proxy.Definition `bson:"introspect" json:"introspect"`
-	Revoke     *proxy.Definition `bson:"revoke" json:"revoke"`
+	Authorize  *types.Proxy `bson:"authorize" json:"authorize"`
+	Token      *types.Proxy `bson:"token" json:"token"`
+	Introspect *types.Proxy `bson:"introspect" json:"introspect"`
+	Revoke     *types.Proxy `bson:"revoke" json:"revoke"`
 }
 
 // ClientEndpoints defines the oauth client endpoints that wil be proxied
 type ClientEndpoints struct {
-	Create *proxy.Definition `bson:"create" json:"create"`
-	Remove *proxy.Definition `bson:"remove" json:"remove"`
+	Create *types.Proxy `bson:"create" json:"create"`
+	Remove *types.Proxy `bson:"remove" json:"remove"`
 }
 
 type rateLimitMeta struct {

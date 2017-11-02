@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +45,7 @@ func TestNewFileSystemRepository(t *testing.T) {
 
 	defToAdd := &Definition{
 		Name: "foo-bar",
-		Proxy: &proxy.Definition{
+		Proxy: &types.Proxy{
 			ListenPath:  "/foo/bar/*",
 			UpstreamURL: "http://example.com/foo/bar/",
 		},
@@ -69,7 +69,7 @@ func TestNewFileSystemRepository(t *testing.T) {
 
 	exists, err = fsRepo.Exists(&Definition{
 		Name:  time.Now().Format(time.RFC3339Nano),
-		Proxy: &proxy.Definition{ListenPath: defToAdd.Proxy.ListenPath},
+		Proxy: &types.Proxy{ListenPath: defToAdd.Proxy.ListenPath},
 	})
 	assert.True(t, exists)
 	assert.Equal(t, ErrAPIListenPathExists, err)
@@ -116,11 +116,11 @@ func assertExists(t *testing.T, fsRepo *FileSystemRepository) {
 	assert.True(t, exists)
 	assert.Equal(t, ErrAPINameExists, err)
 
-	exists, err = fsRepo.Exists(&Definition{Name: "example1", Proxy: &proxy.Definition{ListenPath: "/example/*"}})
+	exists, err = fsRepo.Exists(&Definition{Name: "example1", Proxy: &types.Proxy{ListenPath: "/example/*"}})
 	assert.True(t, exists)
 	assert.Equal(t, ErrAPIListenPathExists, err)
 
-	exists, err = fsRepo.Exists(&Definition{Name: "example1", Proxy: &proxy.Definition{ListenPath: "/example1/*"}})
+	exists, err = fsRepo.Exists(&Definition{Name: "example1", Proxy: &types.Proxy{ListenPath: "/example1/*"}})
 	assert.False(t, exists)
 	assert.NoError(t, err)
 }
