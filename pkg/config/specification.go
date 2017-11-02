@@ -3,6 +3,8 @@ package config
 import (
 	"time"
 
+	"github.com/hellofresh/janus/pkg/provider/file"
+	"github.com/hellofresh/janus/pkg/provider/mongodb"
 	"github.com/hellofresh/logging-go"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -19,6 +21,8 @@ type Specification struct {
 	CloseIdleConnsPeriod time.Duration `envconfig:"CLOSE_IDLE_CONNS_PERIOD"`
 	Log                  logging.LogConfig
 	Web                  Web
+	File                 *file.Provider
+	Mongodb              *mongodb.Provider
 	Database             Database
 	Storage              Storage
 	Stats                Stats
