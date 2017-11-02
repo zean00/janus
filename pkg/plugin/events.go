@@ -6,7 +6,6 @@ import (
 	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/hellofresh/janus/pkg/router"
 	stats "github.com/hellofresh/stats-go"
-	mgo "gopkg.in/mgo.v2"
 )
 
 // Define the event names for the startup and shutdown events
@@ -20,11 +19,10 @@ const (
 
 // OnStartup represents a event that happens when Janus starts up on the main process
 type OnStartup struct {
-	Notifier     notifier.Notifier
-	StatsClient  stats.Client
-	MongoSession *mgo.Session
-	Register     *proxy.Register
-	Config       *config.Specification
+	Notifier    notifier.Notifier
+	StatsClient stats.Client
+	Register    *proxy.Register
+	Config      *config.Specification
 }
 
 // OnReload represents a event that happens when Janus hot reloads it's configurations
