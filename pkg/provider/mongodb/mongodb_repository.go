@@ -1,9 +1,23 @@
-package api
+package mongodb
 
 import (
+	"errors"
+
+	"github.com/hellofresh/janus/pkg/types"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+)
+
+var (
+	// ErrAPIDefinitionNotFound is used when the api was not found in the datastore
+	ErrAPIDefinitionNotFound = errors.New("api definition not found")
+
+	// ErrAPINameExists is used when the API name is already registered on the datastore
+	ErrAPINameExists = errors.New("api name is already registered")
+
+	// ErrAPIListenPathExists is used when the API listen path is already registered on the datastore
+	ErrAPIListenPathExists = errors.New("api listen path is already registered")
 )
 
 const (
@@ -15,14 +29,14 @@ type MongoRepository struct {
 	session *mgo.Session
 }
 
-// NewMongoAppRepository creates a mongo API definition repo
-func NewMongoAppRepository(session *mgo.Session) (*MongoRepository, error) {
-	return &MongoRepository{session}, nil
+// NewMongoRepository creates a mongo API definition repo
+func NewMongoRepository(session *mgo.Session) *MongoRepository {
+	return &MongoRepository{session}
 }
 
 // FindAll fetches all the API definitions available
-func (r *MongoRepository) FindAll() ([]*Definition, error) {
-	result := []*Definition{}
+func (r *MongoRepository) FindAll() ([]*types.Backend, error) {
+	result := []*types.Backend{}
 	session, coll := r.getSession()
 	defer session.Close()
 
@@ -35,17 +49,17 @@ func (r *MongoRepository) FindAll() ([]*Definition, error) {
 }
 
 // FindByName find an API definition by name
-func (r *MongoRepository) FindByName(name string) (*Definition, error) {
+func (r *MongoRepository) FindByName(name string) (*types.Backend, error) {
 	return r.findOneByQuery(bson.M{"name": name})
 }
 
 // FindByListenPath find an API definition by proxy listen path
-func (r *MongoRepository) FindByListenPath(path string) (*Definition, error) {
+func (r *MongoRepository) FindByListenPath(path string) (*types.Backend, error) {
 	return r.findOneByQuery(bson.M{"proxy.listen_path": path})
 }
 
-func (r *MongoRepository) findOneByQuery(query interface{}) (*Definition, error) {
-	var result = NewDefinition()
+func (r *MongoRepository) findOneByQuery(query interface{}) (*types.Backend, error) {
+	var result = types.NewBackend()
 	session, coll := r.getSession()
 	defer session.Close()
 
@@ -61,12 +75,26 @@ func (r *MongoRepository) findOneByQuery(query interface{}) (*Definition, error)
 }
 
 // Exists searches an existing API definition by its listen_path
-func (r *MongoRepository) Exists(def *Definition) (bool, error) {
-	return exists(r, def)
+func (r *MongoRepository) Exists(def *types.Backend) (bool, error) {
+	_, err := r.FindByName(def.Name)
+	if nil != err && err != ErrAPIDefinitionNotFound {
+		return false, err
+	} else if err != ErrAPIDefinitionNotFound {
+		return true, ErrAPINameExists
+	}
+
+	_, err = r.FindByListenPath(def.Proxy.ListenPath)
+	if nil != err && err != ErrAPIDefinitionNotFound {
+		return false, err
+	} else if err != ErrAPIDefinitionNotFound {
+		return true, ErrAPIListenPathExists
+	}
+
+	return false, nil
 }
 
 // Add adds an API definition to the repository
-func (r *MongoRepository) Add(definition *Definition) error {
+func (r *MongoRepository) Add(definition *types.Backend) error {
 	session, coll := r.getSession()
 	defer session.Close()
 
@@ -105,8 +133,8 @@ func (r *MongoRepository) Remove(name string) error {
 }
 
 // FindValidAPIHealthChecks retrieves all apis that has health check configured
-func (r *MongoRepository) FindValidAPIHealthChecks() ([]*Definition, error) {
-	result := []*Definition{}
+func (r *MongoRepository) FindValidAPIHealthChecks() ([]*types.Backend, error) {
+	result := []*types.Backend{}
 	session, coll := r.getSession()
 	defer session.Close()
 
