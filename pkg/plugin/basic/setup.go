@@ -49,7 +49,7 @@ func onStartup(event interface{}) error {
 		return errors.New("Could not convert event to startup type")
 	}
 
-	if e.MongoSession == nil {
+	if e.Config.Mongodb.Session == nil {
 		return ErrInvalidMongoDBSession
 	}
 
@@ -57,7 +57,7 @@ func onStartup(event interface{}) error {
 		return ErrInvalidAdminRouter
 	}
 
-	repo, err = NewMongoRepository(e.MongoSession)
+	repo, err = NewMongoRepository(e.Config.Mongodb.Session)
 	if err != nil {
 		return err
 	}

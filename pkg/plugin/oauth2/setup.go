@@ -2,7 +2,6 @@ package oauth2
 
 import (
 	"fmt"
-	"net/url"
 
 	"github.com/hellofresh/janus/pkg/config"
 	"github.com/hellofresh/janus/pkg/jwt"
@@ -12,11 +11,6 @@ import (
 	"github.com/hellofresh/janus/pkg/router"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	mongodb = "mongodb"
-	file    = "file"
 )
 
 var (
@@ -61,34 +55,27 @@ func onReload(event interface{}) error {
 }
 
 func onStartup(event interface{}) error {
-	var ntf notifier.Notifier
+	var (
+		ntf notifier.Notifier
+		err error
+	)
 
 	e, ok := event.(plugin.OnStartup)
 	if !ok {
 		return errors.New("Could not convert event to startup type")
 	}
 
-	config := e.Config.Database
-	dsnURL, err := url.Parse(config.DSN)
-	if err != nil {
-		return err
-	}
+	if e.Config.Mongodb != nil {
+		repo, err = NewMongoRepository(e.Config.Mongodb.Session)
+	} else if e.Config.File != nil {
+		authDir := fmt.Sprintf("%s/auth", e.Config.File.Directory)
+		log.WithField("auth_dir", authDir).Debug("Trying to load configuration files")
 
-	switch dsnURL.Scheme {
-	case mongodb:
-		repo, err = NewMongoRepository(e.MongoSession)
-		if err != nil {
-			return errors.Wrap(err, "Could not create a mongodb repository for oauth servers")
-		}
-	case file:
-		authPath := fmt.Sprintf("%s/auth", dsnURL.Path)
-		log.WithField("auth_path", authPath).Debug("Trying to load configuration files")
-
-		repo, err = NewFileSystemRepository(authPath)
+		repo, err = NewFileSystemRepository(authDir)
 		if err != nil {
 			return errors.Wrap(err, "Could not create a file based repository for the oauth servers")
 		}
-	default:
+	} else {
 		return errors.New("The selected scheme is not supported to load OAuth servers")
 	}
 
