@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/hellofresh/janus/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,7 +59,7 @@ func (p *Register) Add(route *Route) error {
 	return nil
 }
 
-func (p *Register) createDirector(proxyDefinition *Definition) func(req *http.Request) {
+func (p *Register) createDirector(proxyDefinition *types.Proxy) func(req *http.Request) {
 	return func(req *http.Request) {
 		var target *url.URL
 		var err error
