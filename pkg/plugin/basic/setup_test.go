@@ -6,6 +6,7 @@ import (
 	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/hellofresh/janus/pkg/server"
 	"github.com/hellofresh/janus/pkg/types"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +18,7 @@ func TestSetup(t *testing.T) {
 	err := onAdminAPIStartup(event1)
 	require.NoError(t, err)
 
-	event2 := plugin.OnStartup{Register: proxy.NewRegister(router.NewChiRouter(), proxy.Params{})}
+	event2 := server.OnStartup{Register: proxy.NewRegister(router.NewChiRouter(), proxy.Params{})}
 	err = onStartup(event2)
 	require.NoError(t, err)
 
@@ -26,7 +27,7 @@ func TestSetup(t *testing.T) {
 }
 
 func TestOnStartupMissingAdminRouter(t *testing.T) {
-	event := plugin.OnStartup{}
+	event := server.OnStartup{}
 	err := onStartup(event)
 	require.Error(t, err)
 	require.IsType(t, ErrInvalidAdminRouter, err)
@@ -39,7 +40,7 @@ func TestOnStartupWrongEvent(t *testing.T) {
 }
 
 func TestOnAdminAPIStartupWrongEvent(t *testing.T) {
-	wrongEvent := plugin.OnStartup{}
+	wrongEvent := server.OnStartup{}
 	err := onAdminAPIStartup(wrongEvent)
 	require.Error(t, err)
 }

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/hellofresh/janus/pkg/config"
 	"github.com/hellofresh/janus/pkg/jwt/provider"
 	"github.com/hellofresh/janus/pkg/render"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -27,7 +27,7 @@ type Handler struct {
 // Login can be used by clients to get a jwt token.
 // Payload needs to be json in the form of {"username": "<USERNAME>", "password": "<PASSWORD>"}.
 // Reply will be of the form {"token": "<TOKEN>"}.
-func (j *Handler) Login(config config.Credentials) http.HandlerFunc {
+func (j *Handler) Login(config types.Credentials) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accessToken, err := extractAccessToken(r)
 		if err != nil {

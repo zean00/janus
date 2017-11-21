@@ -3,7 +3,7 @@ package jwt
 import (
 	"time"
 
-	"github.com/hellofresh/janus/pkg/config"
+	"github.com/hellofresh/janus/pkg/types"
 )
 
 // Guard struct
@@ -24,7 +24,7 @@ type Guard struct {
 }
 
 // NewGuard creates a new instance of Guard with default handlers
-func NewGuard(cred config.Credentials) Guard {
+func NewGuard(cred types.Credentials) Guard {
 	return Guard{
 		ParserConfig: ParserConfig{
 			SigningMethods: []SigningMethod{{Alg: cred.Algorithm, Key: cred.Secret}},

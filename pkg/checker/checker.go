@@ -8,26 +8,17 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/hellofresh/health-go"
-	"github.com/hellofresh/janus/pkg/api"
 	"github.com/hellofresh/janus/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
 // NewOverviewHandler creates instance of all status checks handler
-func NewOverviewHandler(repo api.Repository) func(w http.ResponseWriter, r *http.Request) {
+func NewOverviewHandler(configuration *types.Configuration) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		definitions, err := repo.FindValidAPIHealthChecks()
-		if err != nil {
-			log.WithError(err).Error("Error fetching API definitions for health check registering")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		log.WithField("len", len(definitions)).Debug("Loading health check endpoints")
+		log.WithField("len", len(configuration.Backends)).Debug("Loading health check endpoints")
 		health.Reset()
 
-		for _, definition := range definitions {
+		for _, definition := range configuration.Backends {
 			log.WithField("name", definition.Name).Debug("Health check registered")
 			health.Register(health.Config{
 				Name:      definition.Name,
@@ -42,18 +33,10 @@ func NewOverviewHandler(repo api.Repository) func(w http.ResponseWriter, r *http
 }
 
 // NewStatusHandler creates instance of single proxy status check handler
-func NewStatusHandler(repo api.Repository) func(w http.ResponseWriter, r *http.Request) {
+func NewStatusHandler(configuration *types.Configuration) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		definitions, err := repo.FindValidAPIHealthChecks()
-		if err != nil {
-			log.WithError(err).Error("Error fetching API definitions for health check registering")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
 		name := chi.URLParam(r, "name")
-		for _, definition := range definitions {
+		for _, definition := range configuration.Backends {
 			if name == definition.Name {
 				resp, err := doStatusRequest(definition, false)
 				if err != nil {

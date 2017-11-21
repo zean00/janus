@@ -19,17 +19,17 @@ type Provider struct {
 
 // Provide allows the file provider to provide configurations to janus
 // using the given configuration channel.
-func (p *Provider) Provide(configChan chan<- types.ConfigMessage) error {
-	backends, err := p.loadConfig()
+func (p *Provider) Provide(configChan chan<- types.ConfigMessage, changeChan chan types.ConfigurationEvent) error {
+	configuration, err := p.loadConfig()
 	if err != nil {
 		return err
 	}
 
-	sendConfigToChannel(configChan, backends)
+	sendConfigToChannel(configChan, configuration)
 	return nil
 }
 
-func (p *Provider) loadConfig() ([]*types.Backend, error) {
+func (p *Provider) loadConfig() (*types.Configuration, error) {
 	if p.Directory != "" {
 		return nil, errors.New("directory cannot be empty when you choose a file provider")
 	}
@@ -37,14 +37,14 @@ func (p *Provider) loadConfig() ([]*types.Backend, error) {
 	return loadFileConfigFromDirectory(fmt.Sprintf("%s/apis", p.Directory))
 }
 
-func sendConfigToChannel(configChan chan<- types.ConfigMessage, backends []*types.Backend) {
+func sendConfigToChannel(configChan chan<- types.ConfigMessage, configuration *types.Configuration) {
 	configChan <- types.ConfigMessage{
 		ProviderName:  "file",
-		Configuration: backends,
+		Configuration: configuration,
 	}
 }
 
-func loadFileConfigFromDirectory(dir string) ([]*types.Backend, error) {
+func loadFileConfigFromDirectory(dir string) (*types.Configuration, error) {
 	var backends []*types.Backend
 
 	files, err := ioutil.ReadDir(dir)
@@ -63,7 +63,7 @@ func loadFileConfigFromDirectory(dir string) ([]*types.Backend, error) {
 		}
 	}
 
-	return backends, nil
+	return &types.Configuration{Backends: backends}, nil
 }
 
 func loadFileConfig(filePath string) (*types.Backend, error) {

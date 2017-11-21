@@ -23,10 +23,28 @@ type Spec struct {
 	*Backend
 }
 
+// Configuration of a provider.
+type Configuration struct {
+	Backends []*Backend
+}
+
 // ConfigMessage hold configuration information exchanged between parts of janus.
 type ConfigMessage struct {
 	ProviderName  string
-	Configuration []*Backend
+	Configuration *Configuration
+}
+
+const (
+	// ConfigurationRemoved is used when a configuration is removed on an existing provider
+	ConfigurationRemoved int = iota
+	// ConfigurationChanged is used when a configuration is updated or added
+	ConfigurationChanged
+)
+
+// ConfigurationEvent represents changes made to the existing configurations
+type ConfigurationEvent struct {
+	Type    int
+	Backend *Backend
 }
 
 // Plugin represents the plugins for an API
@@ -105,4 +123,45 @@ func NewProxy() *Proxy {
 // Validate validates proxy data
 func (d *Proxy) Validate() (bool, error) {
 	return govalidator.ValidateStruct(d)
+}
+
+// TLS represents the TLS configurations
+type TLS struct {
+	Port     int    `envconfig:"PORT"`
+	CertFile string `envconfig:"CERT_PATH"`
+	KeyFile  string `envconfig:"KEY_PATH"`
+	Redirect bool   `envconfig:"REDIRECT"`
+}
+
+// IsHTTPS checks if you have https enabled
+func (s *TLS) IsHTTPS() bool {
+	return s.CertFile != "" && s.KeyFile != ""
+}
+
+// Credentials represents the credentials that are going to be
+// used by admin JWT configuration
+type Credentials struct {
+	// Algorithm defines admin JWT signing algorithm.
+	// Currently the following algorithms are supported: HS256, HS384, HS512.
+	Algorithm string `envconfig:"ALGORITHM"`
+	Secret    string `envconfig:"SECRET"`
+	Github    Github
+	Basic     Basic
+}
+
+// Basic holds the basic users configurations
+type Basic struct {
+	Users map[string]string `envconfig:"BASIC_USERS"`
+}
+
+// Github holds the github configurations
+type Github struct {
+	Organizations []string          `envconfig:"GITHUB_ORGANIZATIONS"`
+	Teams         map[string]string `envconfig:"GITHUB_TEAMS"`
+}
+
+// IsConfigured checks if github is enabled
+func (auth *Github) IsConfigured() bool {
+	return len(auth.Organizations) > 0 ||
+		len(auth.Teams) > 0
 }

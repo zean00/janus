@@ -6,6 +6,7 @@ import (
 	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/hellofresh/janus/pkg/server"
 )
 
 var (
@@ -44,7 +45,7 @@ func onAdminAPIStartup(event interface{}) error {
 func onStartup(event interface{}) error {
 	var err error
 
-	e, ok := event.(plugin.OnStartup)
+	e, ok := event.(server.OnStartup)
 	if !ok {
 		return errors.New("Could not convert event to startup type")
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/hellofresh/janus/pkg/errors"
 	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/proxy"
+	"github.com/hellofresh/janus/pkg/server"
 	stats "github.com/hellofresh/stats-go"
 	"github.com/ulule/limiter"
 	"github.com/ulule/limiter/drivers/middleware/stdlib"
@@ -48,7 +49,7 @@ func init() {
 }
 
 func onStartup(event interface{}) error {
-	e, ok := event.(plugin.OnStartup)
+	e, ok := event.(server.OnStartup)
 	if !ok {
 		return errors.New(http.StatusInternalServerError, "Could not convert event to startup type")
 	}

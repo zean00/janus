@@ -16,10 +16,11 @@ import (
 	"github.com/hellofresh/janus/pkg/notifier"
 	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/provider"
+	"github.com/hellofresh/janus/pkg/provider/web"
 	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/hellofresh/janus/pkg/store"
 	"github.com/hellofresh/janus/pkg/types"
-	"github.com/hellofresh/janus/pkg/web"
 	stats "github.com/hellofresh/stats-go"
 	log "github.com/sirupsen/logrus"
 )
@@ -27,14 +28,24 @@ import (
 type (
 	// Server is the reverse-proxy/load-balancer engine
 	Server struct {
-		globalConfiguration *config.Specification
-		providers           []provider.Provider
-		configurationChan   chan types.ConfigMessage
-		stopChan            chan bool
-		signals             chan os.Signal
-		statsClient         stats.Client
-		httpServer          *http.Server
-		ntf                 notifier.Notifier
+		globalConfiguration   *config.Specification
+		providers             []provider.Provider
+		configurationChan     chan types.ConfigMessage
+		changesChan           chan types.ConfigurationEvent
+		stopChan              chan bool
+		signals               chan os.Signal
+		statsClient           stats.Client
+		httpServer            *http.Server
+		ntf                   notifier.Notifier
+		currentConfigurations *types.Configuration
+	}
+
+	// OnStartup represents a event that happens when Janus starts up on the main process
+	OnStartup struct {
+		Notifier    notifier.Notifier
+		StatsClient stats.Client
+		Register    *proxy.Register
+		Config      *config.Specification
 	}
 )
 
@@ -54,8 +65,10 @@ func New(globalConfiguration *config.Specification) (*Server, error) {
 	server.statsClient = statsClient
 	server.signals = make(chan os.Signal, 1)
 	server.configurationChan = make(chan types.ConfigMessage, 100)
+	server.changesChan = make(chan types.ConfigurationEvent)
 	server.stopChan = make(chan bool, 1)
 	server.globalConfiguration = globalConfiguration
+	server.currentConfigurations = &types.Configuration{Backends: make([]*types.Backend, 0)}
 	server.configureSignals()
 
 	return server, nil
@@ -64,12 +77,27 @@ func New(globalConfiguration *config.Specification) (*Server, error) {
 // Start starts the server.
 func (s *Server) Start() error {
 	r := s.buildDefaultHTTPRouter()
-	s.startServer(r)
+
+	go s.startServer(r)
+	go s.listenProviders()
+	go s.listenSignals()
 
 	s.configureProviders()
 	s.startProviders()
-	go s.listenProviders()
-	go s.listenSignals()
+
+	storage, err := s.loadClusterNotifier(s.globalConfiguration.Storage.DSN)
+	if err != nil {
+		return err
+	}
+
+	if subscriber, ok := storage.(notifier.Subscriber); ok {
+		listener := notifier.NewNotificationListener(subscriber)
+		listener.Start(s.handleClusterNotification)
+	}
+
+	if publisher, ok := storage.(notifier.Publisher); ok {
+		s.ntf = notifier.NewPublisherNotifier(publisher, "")
+	}
 
 	return nil
 }
@@ -104,6 +132,7 @@ func (s *Server) Close() {
 	}(ctx)
 	s.statsClient.Close()
 	close(s.configurationChan)
+	close(s.changesChan)
 	signal.Stop(s.signals)
 	close(s.signals)
 	close(s.stopChan)
@@ -120,21 +149,26 @@ func (s *Server) configureProviders() {
 	if s.globalConfiguration.File != nil {
 		s.providers = append(s.providers, s.globalConfiguration.File)
 	}
+	if s.globalConfiguration.Mongodb != nil {
+		s.providers = append(s.providers, s.globalConfiguration.Mongodb)
+	}
+	if s.globalConfiguration.Web != nil {
+		s.globalConfiguration.Web.CurrentConfigurations = s.currentConfigurations
+		s.providers = append(s.providers, s.globalConfiguration.Web)
+	}
 }
 
 func (s *Server) startProviders() {
-	// start providers
 	for _, p := range s.providers {
 		providerType := reflect.TypeOf(p)
-		logger := log.WithField("provider_type", providerType)
+		logger := log.WithField("provider_type", providerType.Elem().Name())
 		logger.Info("Starting provider")
-		currentProvider := p
-		go func() {
-			err := currentProvider.Provide(s.configurationChan)
+		go func(currentProvider provider.Provider) {
+			err := currentProvider.Provide(s.configurationChan, s.changesChan)
 			if err != nil {
-				logger.Error("Error starting provider")
+				logger.WithError(err).Error("Error starting provider")
 			}
-		}()
+		}(p)
 	}
 }
 
@@ -142,33 +176,54 @@ func (s *Server) listenProviders() {
 	for {
 		select {
 		case configMsg, ok := <-s.configurationChan:
+			log.Debug("Configuration received")
 			if !ok {
 				return
 			}
 
-			newRouter := s.buildDefaultHTTPRouter()
-			register := proxy.NewRegister(newRouter, proxy.Params{
-				StatsClient:            s.statsClient,
-				FlushInterval:          s.globalConfiguration.BackendFlushInterval,
-				IdleConnectionsPerHost: s.globalConfiguration.MaxIdleConnsPerHost,
-				CloseIdleConnsPeriod:   s.globalConfiguration.CloseIdleConnsPeriod,
-			})
+			if configMsg.Configuration == nil || configMsg.Configuration.Backends == nil {
+				log.WithField("provider", configMsg.ProviderName).Info("Skipping empty Configuration for provider")
+			} else {
+				log.Debug("Building new router....")
+				newRouter := s.buildDefaultHTTPRouter()
+				register := proxy.NewRegister(newRouter, proxy.Params{
+					StatsClient:            s.statsClient,
+					FlushInterval:          s.globalConfiguration.BackendFlushInterval,
+					IdleConnectionsPerHost: s.globalConfiguration.MaxIdleConnsPerHost,
+					CloseIdleConnsPeriod:   s.globalConfiguration.CloseIdleConnsPeriod,
+				})
 
-			s.configureBackends(register, configMsg.Configuration)
+				event := OnStartup{
+					Notifier:    s.ntf,
+					StatsClient: s.statsClient,
+					Register:    register,
+					Config:      s.globalConfiguration,
+				}
+				plugin.EmitEvent(plugin.StartupEvent, event)
 
-			s.httpServer.Handler = newRouter
+				log.Debug("Reloading backends....")
+				s.configureBackends(register, configMsg.Configuration.Backends)
+				*s.currentConfigurations = *configMsg.Configuration
+
+				log.Debug("Reloading router....")
+				s.httpServer.Handler = newRouter
+			}
+		case <-s.changesChan:
+			log.Debug("Configuration change received")
+			s.startProviders()
 		}
 	}
 }
+
 func (s *Server) configureBackends(register *proxy.Register, backend []*types.Backend) {
 	for _, backend := range backend {
 		route, err := s.configureBackend(backend)
 		if err != nil {
 			log.WithError(err).Warn("Error ocurred when registering backend")
+		} else {
+			log.Debug("Backend registered")
+			register.Add(route)
 		}
-
-		log.Debug("Backend registered")
-		register.Add(route)
 	}
 }
 
@@ -252,4 +307,18 @@ func (s *Server) startServer(handler http.Handler) {
 
 	log.WithField("address", address).Info("Certificate and certificate key were not found, defaulting to HTTP")
 	s.httpServer.ListenAndServe()
+}
+
+func (s *Server) loadClusterNotifier(dsn string) (store.Store, error) {
+	log.WithField("dsn", dsn).Debug("Initializing storage")
+	storage, err := store.Build(dsn)
+	if nil != err {
+		return nil, err
+	}
+
+	return storage, nil
+}
+
+func (s *Server) handleClusterNotification(notification notifier.Notification) {
+	s.changesChan <- types.ConfigurationEvent{}
 }

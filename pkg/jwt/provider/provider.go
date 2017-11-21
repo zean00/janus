@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/hellofresh/janus/pkg/config"
+	"github.com/hellofresh/janus/pkg/types"
 )
 
 var providers *sync.Map
@@ -17,7 +17,7 @@ func init() {
 // Provider represents an auth provider
 type Provider interface {
 	Verifier
-	Build(config config.Credentials) Provider
+	Build(config types.Credentials) Provider
 	GetClaims(httpClient *http.Client) (jwt.MapClaims, error)
 }
 
@@ -35,7 +35,7 @@ func GetProviders() *sync.Map {
 type Factory struct{}
 
 // Build builds one provider based on the auth configuration
-func (f *Factory) Build(providerName string, config config.Credentials) Provider {
+func (f *Factory) Build(providerName string, config types.Credentials) Provider {
 	provider, ok := providers.Load(providerName)
 	if !ok {
 		provider, _ = providers.Load("basic")

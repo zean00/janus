@@ -3,9 +3,6 @@ package main
 import (
 	"github.com/hellofresh/janus/pkg/server"
 
-	"github.com/hellofresh/janus/pkg/notifier"
-	"github.com/hellofresh/janus/pkg/plugin"
-	"github.com/hellofresh/janus/pkg/proxy"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -22,10 +19,6 @@ import (
 	// dynamically registered auth providers
 	_ "github.com/hellofresh/janus/pkg/jwt/basic"
 	_ "github.com/hellofresh/janus/pkg/jwt/github"
-
-	// internal plugins
-	_ "github.com/hellofresh/janus/pkg/loader"
-	_ "github.com/hellofresh/janus/pkg/web"
 )
 
 // RunServer is the run command to start Janus
@@ -35,20 +28,8 @@ func RunServer(cmd *cobra.Command, args []string) {
 	initConfig()
 	initLog()
 	initDistributedTracing()
-	initStorage()
-	initDatabase()
 
 	defer globalConfig.Log.Flush()
-	defer session.Close()
-
-	if subscriber, ok := storage.(notifier.Subscriber); ok {
-		listener := notifier.NewNotificationListener(subscriber)
-		listener.Start(handleEvent)
-	}
-
-	if publisher, ok := storage.(notifier.Publisher); ok {
-		ntf = notifier.NewPublisherNotifier(publisher, "")
-	}
 
 	svr, err := server.New(globalConfig)
 	if err != nil {
@@ -60,28 +41,4 @@ func RunServer(cmd *cobra.Command, args []string) {
 	svr.Wait()
 	log.Info("Shutting down")
 	log.Exit(0)
-
-	event := plugin.OnStartup{
-		Notifier:    ntf,
-		StatsClient: statsClient,
-		Register:    register,
-		Config:      globalConfig,
-	}
-	plugin.EmitEvent(plugin.StartupEvent, event)
-}
-
-func handleEvent(notification notifier.Notification) {
-	if notifier.RequireReload(notification.Command) {
-		newRouter := createRouter()
-		register := proxy.NewRegister(newRouter, proxy.Params{
-			StatsClient:            statsClient,
-			FlushInterval:          globalConfig.BackendFlushInterval,
-			IdleConnectionsPerHost: globalConfig.MaxIdleConnsPerHost,
-			CloseIdleConnsPeriod:   globalConfig.CloseIdleConnsPeriod,
-		})
-
-		plugin.EmitEvent(plugin.ReloadEvent, plugin.OnReload{Register: register})
-
-		server.Handler = newRouter
-	}
 }

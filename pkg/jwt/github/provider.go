@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/hellofresh/janus/pkg/config"
 	"github.com/hellofresh/janus/pkg/jwt/provider"
+	"github.com/hellofresh/janus/pkg/types"
 )
 
 func init() {
@@ -18,7 +18,7 @@ type Provider struct {
 }
 
 // Build acts like the constructor for a provider
-func (gp *Provider) Build(config config.Credentials) provider.Provider {
+func (gp *Provider) Build(config types.Credentials) provider.Provider {
 	client := NewClient()
 
 	return &Provider{

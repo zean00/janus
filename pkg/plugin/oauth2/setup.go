@@ -3,12 +3,13 @@ package oauth2
 import (
 	"fmt"
 
-	"github.com/hellofresh/janus/pkg/config"
 	"github.com/hellofresh/janus/pkg/jwt"
 	"github.com/hellofresh/janus/pkg/notifier"
 	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/hellofresh/janus/pkg/server"
+	"github.com/hellofresh/janus/pkg/types"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -20,7 +21,6 @@ var (
 
 func init() {
 	plugin.RegisterEventHook(plugin.StartupEvent, onStartup)
-	plugin.RegisterEventHook(plugin.ReloadEvent, onReload)
 	plugin.RegisterEventHook(plugin.AdminAPIStartupEvent, onAdminAPIStartup)
 	plugin.RegisterPlugin("oauth2", plugin.Plugin{
 		Action: setupOAuth2,
@@ -42,25 +42,13 @@ func onAdminAPIStartup(event interface{}) error {
 	return nil
 }
 
-func onReload(event interface{}) error {
-	e, ok := event.(plugin.OnReload)
-	if !ok {
-		return errors.New("Could not convert event to reload type")
-	}
-
-	loader := NewOAuthLoader(e.Register)
-	loader.LoadDefinitions(repo)
-
-	return nil
-}
-
 func onStartup(event interface{}) error {
 	var (
 		ntf notifier.Notifier
 		err error
 	)
 
-	e, ok := event.(plugin.OnStartup)
+	e, ok := event.(server.OnStartup)
 	if !ok {
 		return errors.New("Could not convert event to startup type")
 	}
@@ -129,7 +117,7 @@ func getManager(oauthServer *OAuth, oAuthServerName string) (Manager, error) {
 }
 
 // loadOAuthEndpoints register api endpoints
-func loadOAuthEndpoints(router router.Router, repo Repository, ntf notifier.Notifier, cred config.Credentials) {
+func loadOAuthEndpoints(router router.Router, repo Repository, ntf notifier.Notifier, cred types.Credentials) {
 	log.Debug("Loading OAuth Endpoints")
 
 	guard := jwt.NewGuard(cred)
