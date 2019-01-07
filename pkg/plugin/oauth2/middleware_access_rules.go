@@ -2,6 +2,7 @@ package oauth2
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/hellofresh/janus/pkg/jwt"
 	log "github.com/sirupsen/logrus"
@@ -14,10 +15,12 @@ func NewRevokeRulesMiddleware(parser *jwt.Parser, accessRules []*AccessRule) fun
 			log.WithField("rules", len(accessRules)).Debug("Starting revoke rules middleware")
 
 			// If no rules are set then lets not parse the token to avoid performance issues
-			if len(accessRules) < 1 {
-				handler.ServeHTTP(w, r)
-				return
-			}
+			/*
+				if len(accessRules) < 1 {
+					handler.ServeHTTP(w, r)
+					return
+				}
+			*/
 
 			token, err := parser.ParseFromRequest(r)
 			if err != nil {
@@ -27,6 +30,27 @@ func NewRevokeRulesMiddleware(parser *jwt.Parser, accessRules []*AccessRule) fun
 			}
 
 			if claims, ok := parser.GetMapClaims(token); ok && token.Valid {
+				for k, v := range claims {
+					val, ok := v.(string)
+					if !ok {
+						continue
+					}
+					if strings.ToLower(k) == "sub" {
+						r.Header.Add("subject", val)
+					} else if strings.ToLower(k) == "aud" {
+						r.Header.Add("audience", val)
+					} else if strings.ToLower(k) == "iss" {
+						r.Header.Add("issuer", val)
+					} else {
+						r.Header.Add(k, v.(string))
+					}
+				}
+
+				if len(accessRules) < 1 {
+					handler.ServeHTTP(w, r)
+					return
+				}
+
 				for _, rule := range accessRules {
 					allowed, err := rule.IsAllowed(claims)
 					if err != nil {
