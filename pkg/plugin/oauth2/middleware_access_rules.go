@@ -36,13 +36,13 @@ func NewRevokeRulesMiddleware(parser *jwt.Parser, accessRules []*AccessRule) fun
 						continue
 					}
 					if strings.ToLower(k) == "sub" {
-						r.Header.Add("subject", val)
+						r.Header.Set("subject", val)
 					} else if strings.ToLower(k) == "aud" {
-						r.Header.Add("audience", val)
+						r.Header.Set("audience", val)
 					} else if strings.ToLower(k) == "iss" {
-						r.Header.Add("issuer", val)
+						r.Header.Set("issuer", val)
 					} else {
-						r.Header.Add(k, v.(string))
+						r.Header.Set(k, v.(string))
 					}
 				}
 
