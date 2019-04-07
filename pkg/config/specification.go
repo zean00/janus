@@ -26,6 +26,7 @@ type Specification struct {
 	TLS                  TLS
 	Cluster              Cluster
 	RespondingTimeouts   RespondingTimeouts
+	Loghook              Loghook
 }
 
 // Cluster represents the cluster configuration
@@ -99,6 +100,13 @@ type Github struct {
 	Teams         map[string]string `envconfig:"GITHUB_TEAMS"`
 }
 
+//Loghook nats streaming
+type Loghook struct {
+	URL     string `envconfig:"LOGHOOK_NATS_URL"`
+	Cluster string `envconfig:"LOGHOOK_NATS_CLUSTER"`
+	Subject string `envconfig:"LOGHOOK_NATS_SUBJECT"`
+}
+
 // IsConfigured checks if github is enabled
 func (auth *Github) IsConfigured() bool {
 	return len(auth.Organizations) > 0 ||
@@ -148,6 +156,10 @@ func init() {
 	viper.SetDefault("tracing.serviceName", serviceName)
 	viper.SetDefault("tracing.samplingStrategy", "probabilistic")
 	viper.SetDefault("tracing.samplingParam", 0.15)
+
+	viper.SetDefault("loghook.url", "nats://nats:4222")
+	viper.SetDefault("loghook.cluster", "test-cluster")
+	viper.SetDefault("loghook.subject", "apigw.log")
 
 	logging.InitDefaults(viper.GetViper(), "log")
 }

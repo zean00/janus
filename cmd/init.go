@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"github.com/hellofresh/janus/pkg/config"
+	loghook "github.com/hellofresh/janus/pkg/log"
 	obs "github.com/hellofresh/janus/pkg/observability"
 	"github.com/hellofresh/stats-go"
 	"github.com/hellofresh/stats-go/bucket"
 	"github.com/hellofresh/stats-go/client"
 	"github.com/hellofresh/stats-go/hooks"
+	stan "github.com/nats-io/go-nats-streaming"
 	log "github.com/sirupsen/logrus"
 	"go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/exporter/prometheus"
@@ -83,6 +85,14 @@ func initStatsClient() {
 
 	_, appFile := filepath.Split(os.Args[0])
 	statsClient.TrackMetric("app", bucket.MetricOperation{"init", host, appFile})
+
+	conn, err := stan.Connect(globalConfig.Loghook.Cluster, host, stan.NatsURL(globalConfig.Loghook.URL))
+	if err != nil {
+		log.Error("Error connecting nats streaming")
+	} else {
+		log.Info("Connecting to nats streaming with subject ", globalConfig.Loghook.Subject)
+		log.AddHook(loghook.NewNatsHook(conn, globalConfig.Loghook.Subject))
+	}
 
 	log.AddHook(hooks.NewLogrusHook(statsClient, globalConfig.Stats.ErrorsSection))
 }
