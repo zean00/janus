@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -67,8 +68,15 @@ func (m *Logger) Handler(handler http.Handler) http.Handler {
 			session = false
 		}
 
+		var claim map[string]interface{}
+
+		if err := json.Unmarshal(b, &claim); err != nil {
+			log.Warn("Failed to unmarshal claim")
+			session = false
+		}
+
 		if session {
-			fields["session"] = string(b)
+			fields["session"] = claim
 		}
 
 		log.WithFields(fields).Info("Completed handling request")
