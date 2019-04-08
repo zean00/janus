@@ -40,45 +40,50 @@ func (m *Logger) Handler(handler http.Handler) http.Handler {
 		fields["duration"] = int(m.Duration / time.Millisecond)
 		fields["duration-fmt"] = m.Duration.String()
 
-		authHeaderValue := r.Header.Get("Authorization")
-		session := true
-		parts := strings.Split(authHeaderValue, " ")
-		if len(parts) < 2 {
-			log.Warn("Attempted access with malformed header, no auth header found.")
-			session = false
-		}
+		session := getSession(r)
 
-		if strings.ToLower(parts[0]) != "bearer" {
-			log.Warn("Bearer token malformed")
-			session = false
-		}
-		accessToken := parts[1]
-
-		tokenPart := strings.Split(accessToken, ".")
-		if len(tokenPart) != 3 {
-			log.Warn("token malformed")
-			session = false
-		}
-
-		tokenClaim := tokenPart[1] + "=="
-
-		b, err := base64.StdEncoding.DecodeString(tokenClaim)
-		if err != nil {
-			log.Warn("Claim malformed")
-			session = false
-		}
-
-		var claim map[string]interface{}
-
-		if err := json.Unmarshal(b, &claim); err != nil {
-			log.Warn("Failed to unmarshal claim")
-			session = false
-		}
-
-		if session {
-			fields["session"] = claim
+		if session != nil {
+			fields["session"] = session
 		}
 
 		log.WithFields(fields).Info("Completed handling request")
 	})
+}
+
+func getSession(r *http.Request) map[string]interface{} {
+	authHeaderValue := r.Header.Get("Authorization")
+	parts := strings.Split(authHeaderValue, " ")
+	if len(parts) < 2 {
+		log.Warn("Attempted access with malformed header, no auth header found.")
+		return nil
+	}
+
+	if strings.ToLower(parts[0]) != "bearer" {
+		log.Warn("Bearer token malformed")
+		return nil
+	}
+	accessToken := parts[1]
+
+	tokenPart := strings.Split(accessToken, ".")
+	if len(tokenPart) != 3 {
+		log.Warn("token malformed")
+		return nil
+	}
+
+	tokenClaim := tokenPart[1] + "=="
+
+	b, err := base64.StdEncoding.DecodeString(tokenClaim)
+	if err != nil {
+		log.Warn("Claim malformed")
+		return nil
+	}
+
+	var claim map[string]interface{}
+
+	if err := json.Unmarshal(b, &claim); err != nil {
+		log.Warn("Failed to unmarshal claim")
+		return nil
+	}
+
+	return claim
 }
