@@ -72,7 +72,8 @@ func (hook *NatsHook) Fire(entry *logrus.Entry) error {
 		return err
 	}
 
-	return hook.conn.Publish(hook.subject, bytes)
+	_, err = hook.conn.PublishAsync(hook.subject, bytes, nil)
+	return err
 }
 
 // Levels will describe what levels the NatsHook is associated with
