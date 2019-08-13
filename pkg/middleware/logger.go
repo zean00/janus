@@ -70,11 +70,22 @@ func getSession(r *http.Request) map[string]interface{} {
 		return nil
 	}
 
-	tokenClaim := tokenPart[1] + "=="
+	tokenClaim := tokenPart[1]
+
+	mod := len(tokenClaim) % 4
+
+	if mod > 0 {
+		mod = 4 - mod
+	}
+
+	for i := 0; i < mod; i++ {
+		tokenClaim += "="
+	}
 
 	b, err := base64.StdEncoding.DecodeString(tokenClaim)
 	if err != nil {
-		log.Warn("Claim malformed")
+		log.Warn("Claim malformed ", err)
+		log.Warn("Claim : " + tokenClaim)
 		return nil
 	}
 
