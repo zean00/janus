@@ -60,6 +60,20 @@ func NewParserConfig(leeway int64, signingMethod ...SigningMethod) ParserConfig 
 	}
 }
 
+//NewParserConfigWithLookup creates a new instance of ParserConfig with token lookup option
+func NewParserConfigWithLookup(lookup string, leeway int64, signingMethod ...SigningMethod) ParserConfig {
+	tlook := lookup
+	if tlook == "" {
+		tlook = "header:Authorization"
+	}
+
+	return ParserConfig{
+		SigningMethods: signingMethod,
+		TokenLookup:    tlook,
+		Leeway:         leeway,
+	}
+}
+
 // Parser struct
 type Parser struct {
 	Config ParserConfig
