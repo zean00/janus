@@ -89,7 +89,7 @@ func NewParser(config ParserConfig) *Parser {
 func (jp *Parser) ParseFromRequest(r *http.Request) (*jwt.Token, error) {
 	var token string
 	var err error
-
+	//fmt.Println("Lookup ", jp.Config.TokenLookup)
 	parts := strings.Split(jp.Config.TokenLookup, ":")
 	switch parts[0] {
 	case "header":
@@ -105,6 +105,27 @@ func (jp *Parser) ParseFromRequest(r *http.Request) (*jwt.Token, error) {
 	}
 
 	return jp.Parse(token)
+}
+
+// ParseRequest tries to extract token from request.
+func (jp *Parser) ParseRequest(r *http.Request) (string, error) {
+	var token string
+	var err error
+	parts := strings.Split(jp.Config.TokenLookup, ":")
+	switch parts[0] {
+	case "header":
+		token, err = jp.jwtFromHeader(r, parts[1])
+	case "query":
+		token, err = jp.jwtFromQuery(r, parts[1])
+	case "cookie":
+		token, err = jp.jwtFromCookie(r, parts[1])
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
 // Parse a JWT token and validates it

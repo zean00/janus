@@ -3,9 +3,9 @@ package oauth2
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/hellofresh/janus/pkg/errors"
+	"github.com/hellofresh/janus/pkg/jwt"
 	"github.com/hellofresh/janus/pkg/metrics"
 	obs "github.com/hellofresh/janus/pkg/observability"
 	"github.com/hellofresh/stats-go/bucket"
@@ -38,7 +38,7 @@ func (c ContextKey) String() string {
 }
 
 // NewKeyExistsMiddleware creates a new instance of KeyExistsMiddleware
-func NewKeyExistsMiddleware(manager Manager) func(http.Handler) http.Handler {
+func NewKeyExistsMiddleware(manager Manager, parser *jwt.Parser) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Debug("Starting Oauth2KeyExists middleware")
@@ -50,27 +50,40 @@ func NewKeyExistsMiddleware(manager Manager) func(http.Handler) http.Handler {
 			})
 
 			// We're using OAuth, start checking for access keys
-			authHeaderValue := r.Header.Get("Authorization")
-			parts := strings.Split(authHeaderValue, " ")
-			if len(parts) < 2 {
+			/*
+				authHeaderValue := r.Header.Get("Authorization")
+				parts := strings.Split(authHeaderValue, " ")
+				if len(parts) < 2 {
+					logger.Warn("Attempted access with malformed header, no auth header found.")
+					statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "header"}, nil, false)
+					stats.Record(r.Context(), obs.MOAuth2MissingHeader.M(1))
+					errors.Handler(w, ErrAuthorizationFieldNotFound)
+					return
+				}
+				statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "header"}, nil, true)
+
+				if strings.ToLower(parts[0]) != "bearer" {
+					logger.Warn("Bearer token malformed")
+					statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "malformed"}, nil, false)
+					stats.Record(r.Context(), obs.MOAuth2MalformedHeader.M(1))
+					errors.Handler(w, ErrBearerMalformed)
+					return
+				}
+			*/
+			accessToken, err := parser.ParseRequest(r)
+			if err != nil {
 				logger.Warn("Attempted access with malformed header, no auth header found.")
-				statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "header"}, nil, false)
-				stats.Record(r.Context(), obs.MOAuth2MissingHeader.M(1))
+				logger.Error(err)
+				log.Error(err)
+				log.WithError(err).Debug("Could not parse the JWT")
 				errors.Handler(w, ErrAuthorizationFieldNotFound)
 				return
 			}
-			statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "header"}, nil, true)
 
-			if strings.ToLower(parts[0]) != "bearer" {
-				logger.Warn("Bearer token malformed")
-				statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "malformed"}, nil, false)
-				stats.Record(r.Context(), obs.MOAuth2MalformedHeader.M(1))
-				errors.Handler(w, ErrBearerMalformed)
-				return
-			}
 			statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "malformed"}, nil, true)
 
-			accessToken := parts[1]
+			//accessToken := token.Raw
+			//accessToken := parts[1]
 			keyExists := manager.IsKeyAuthorized(r.Context(), accessToken)
 			statsClient.TrackOperation(tokensSection, bucket.MetricOperation{"key-exists", "authorized"}, nil, keyExists)
 			if keyExists {

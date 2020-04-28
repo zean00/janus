@@ -136,9 +136,10 @@ func setupOAuth2(def *proxy.RouterDefinition, rawConfig plugin.Config) error {
 		return err
 	}
 
-	def.AddMiddleware(NewKeyExistsMiddleware(manager))
+	parser := jwt.NewParser(jwt.NewParserConfigWithLookup(oauthServer.TokenStrategy.TokenLookup, oauthServer.TokenStrategy.Leeway, signingMethods...))
+	def.AddMiddleware(NewKeyExistsMiddleware(manager, parser))
 	//def.AddMiddleware(NewRevokeRulesMiddleware(jwt.NewParser(jwt.NewParserConfig(oauthServer.TokenStrategy.Leeway, signingMethods...)), oauthServer.AccessRules))
-	def.AddMiddleware(NewRevokeRulesMiddleware(jwt.NewParser(jwt.NewParserConfigWithLookup(oauthServer.TokenStrategy.TokenLookup, oauthServer.TokenStrategy.Leeway, signingMethods...)), oauthServer.AccessRules))
+	def.AddMiddleware(NewRevokeRulesMiddleware(parser, oauthServer.AccessRules))
 
 	return nil
 }
